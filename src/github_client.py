@@ -180,6 +180,10 @@ def commit_and_push(
 ) -> str | None:
     """Stage files, commit, and push to the PR branch. Returns the commit SHA or None on failure."""
     try:
+        # Mark the workspace as safe — required in GitHub Actions Docker containers
+        # where the repo is owned by a different uid than the container user
+        _run_git(repo_path, ["config", "--global", "safe.directory", str(repo_path)])
+
         # Configure git author
         _run_git(repo_path, ["config", "user.email", BOT_AUTHOR_EMAIL])
         _run_git(repo_path, ["config", "user.name", BOT_AUTHOR_NAME])
