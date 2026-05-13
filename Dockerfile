@@ -7,8 +7,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY pyproject.toml .
+COPY src/ src/
+
 RUN pip install --no-cache-dir .
 
-COPY src/ src/
+# GitHub Actions overrides WORKDIR to /github/workspace, so set PYTHONPATH
+# to ensure the src package is always importable
+ENV PYTHONPATH="/app"
 
 ENTRYPOINT ["python", "-m", "src.main"]

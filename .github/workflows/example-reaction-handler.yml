@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: PostHog/product-autonomy-action@v1
+      - uses: ryanmccrary/posthog-autonomy-action@v1
         with:
           posthog_api_key: ${{ secrets.POSTHOG_API_KEY }}
           posthog_project_id: ${{ secrets.POSTHOG_PROJECT_ID }}

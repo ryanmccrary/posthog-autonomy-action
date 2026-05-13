@@ -26,7 +26,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: PostHog/product-autonomy-action@v1
+      - uses: ryanmccrary/posthog-autonomy-action@v1
         with:
           posthog_api_key: ${{ secrets.POSTHOG_API_KEY }}
           posthog_project_id: ${{ secrets.POSTHOG_PROJECT_ID }}
