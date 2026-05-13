@@ -22,6 +22,10 @@ PRODUCT_PATTERNS: dict[PostHogProduct, list[str]] = {
         r"posthog-js",
         r"posthog-python",
         r"posthog-node",
+        r"posthog-ruby",
+        r"PostHog::Client",
+        r"\.capture\(\s*distinct_id:",  # Ruby PostHog SDK
+        r"gem ['\"]posthog-ruby['\"]",
     ],
     PostHogProduct.ERROR_TRACKING: [
         r"captureException\(",
@@ -35,6 +39,8 @@ PRODUCT_PATTERNS: dict[PostHogProduct, list[str]] = {
         r"logging\.getLogger\(",
         r"logger\.(info|warning|error|debug)\(",
         r"console\.(log|warn|error)\(",
+        r"Rails\.logger\.",
+        r"Logger\.new\(",
     ],
     PostHogProduct.FEATURE_FLAGS: [
         r"useFeatureFlag\(",

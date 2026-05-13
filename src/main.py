@@ -107,9 +107,14 @@ def run_pipeline(config: Config, github_client: GitHubClient) -> None:
     # Detect which PostHog products are in use
     products = detect_products_from_files(file_contents, config.products or None)
     if not products:
-        logger.info("No PostHog products detected in the codebase — skipping")
-        return
-    logger.info(f"Products detected: {', '.join(p.value for p in products)}")
+        # No existing instrumentation found — default to product_analytics so the bot
+        # can suggest adding instrumentation to a project that doesn't have any yet.
+        from src.analyzer.product_detector import PostHogProduct
+
+        products = [PostHogProduct.PRODUCT_ANALYTICS]
+        logger.info("No PostHog products detected — defaulting to product_analytics")
+    else:
+        logger.info(f"Products detected: {', '.join(p.value for p in products)}")
 
     # Fetch PostHog project context
     posthog_context = fetch_posthog_context(config)
@@ -241,28 +246,64 @@ def gather_code_context(
     surrounding_context: dict[str, str] = {}
     file_contents: dict[str, str] = {}
 
+    # First, fetch well-known files that reveal SDK usage and project structure.
+    # This is how we detect PostHog products regardless of what the PR touches.
+    for path in _DISCOVERY_FILES:
+        content = github_client.fetch_file_content(path, pr_data.head_ref)
+        if content:
+            surrounding_context[path] = content
+            file_contents[path] = content
+
+    # Fetch changed files
     for pr_file in pr_data.files:
         if pr_file.status == "removed":
             continue
 
-        # Fetch the full file content
         content = github_client.fetch_file_content(pr_file.filename, pr_data.head_ref)
         if content:
             file_contents[pr_file.filename] = content
 
-        # Also fetch nearby files in the same directory to understand patterns
-        dir_path = str(Path(pr_file.filename).parent)
-        if dir_path and dir_path != ".":
-            # Try to find sibling files that might have instrumentation
-            for sibling_suffix in ["index.ts", "index.tsx", "index.py", "__init__.py", "api.py", "views.py"]:
-                sibling_path = f"{dir_path}/{sibling_suffix}"
-                if sibling_path not in file_contents and sibling_path not in surrounding_context:
-                    sibling_content = github_client.fetch_file_content(sibling_path, pr_data.head_ref)
-                    if sibling_content:
-                        surrounding_context[sibling_path] = sibling_content
-                        file_contents[sibling_path] = sibling_content
-
     return surrounding_context, file_contents
+
+
+# Well-known files that reveal SDK usage and project structure.
+# Checked on every run to detect PostHog products regardless of what the PR touches.
+# These are cheap (one API call each, 404s are fast) and cover all major ecosystems.
+_DISCOVERY_FILES: list[str] = [
+    # Dependency manifests
+    "Gemfile",
+    "package.json",
+    "requirements.txt",
+    "pyproject.toml",
+    "go.mod",
+    "Cargo.toml",
+    "composer.json",
+    "build.gradle",
+    "pom.xml",
+    "Podfile",
+    "pubspec.yaml",
+    # Common PostHog initializer / config locations
+    "config/initializers/posthog.rb",
+    "config/initializers/analytics.rb",
+    "src/posthog.ts",
+    "src/posthog.js",
+    "src/analytics.ts",
+    "src/analytics.js",
+    "lib/posthog.rb",
+    "lib/analytics.rb",
+    "app/javascript/posthog.js",
+    "app/javascript/analytics.js",
+    # Layout files that often contain JS SDK snippets
+    "app/views/layouts/application.html.erb",
+    "app/layout.tsx",
+    "app/layout.jsx",
+    "src/app/layout.tsx",
+    "pages/_app.tsx",
+    "pages/_app.js",
+    "index.html",
+    "public/index.html",
+    "templates/base.html",
+]
 
 
 def scan_for_instrumentation(file_contents: dict[str, str]) -> ExistingInstrumentation:
