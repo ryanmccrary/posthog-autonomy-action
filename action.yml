@@ -1,0 +1,49 @@
+name: 'PostHog Product Autonomy Reviewer'
+description: 'Reviews PRs for missing PostHog instrumentation and proposes insights, dashboards, and feature flags'
+author: 'PostHog'
+
+branding:
+  icon: 'bar-chart-2'
+  color: 'orange'
+
+inputs:
+  posthog_api_key:
+    description: 'PostHog personal API key with read/write access'
+    required: true
+  posthog_host:
+    description: 'PostHog instance URL'
+    required: false
+    default: 'https://us.i.posthog.com'
+  posthog_project_id:
+    description: 'PostHog project/team ID'
+    required: true
+  anthropic_api_key:
+    description: 'Anthropic API key for Claude analysis'
+    required: true
+  github_token:
+    description: 'GitHub token for PR interaction'
+    required: false
+    default: ${{ github.token }}
+  config_path:
+    description: 'Path to repo-level config file'
+    required: false
+    default: '.posthog/autonomy.yml'
+  slack_channel:
+    description: 'Default Slack channel for notifications'
+    required: false
+  products:
+    description: 'Comma-separated list of PostHog products to check (auto-detect if empty)'
+    required: false
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    POSTHOG_API_KEY: ${{ inputs.posthog_api_key }}
+    POSTHOG_HOST: ${{ inputs.posthog_host }}
+    POSTHOG_PROJECT_ID: ${{ inputs.posthog_project_id }}
+    ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+    GITHUB_TOKEN: ${{ inputs.github_token }}
+    CONFIG_PATH: ${{ inputs.config_path }}
+    SLACK_CHANNEL: ${{ inputs.slack_channel }}
+    PRODUCTS: ${{ inputs.products }}

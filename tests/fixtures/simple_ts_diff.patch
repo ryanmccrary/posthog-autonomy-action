@@ -1,0 +1,51 @@
+diff --git a/src/workflows/triggers/batch.tsx b/src/workflows/triggers/batch.tsx
+new file mode 100644
+index 0000000..abcdef1
+--- /dev/null
++++ b/src/workflows/triggers/batch.tsx
+@@ -0,0 +1,45 @@
++import React from 'react'
++import { useActions, useValues } from 'kea'
++import { batchTriggerLogic } from './batchTriggerLogic'
++
++export function BatchTriggerConfig(): JSX.Element {
++    const { batchSize, triggerType, isLoading } = useValues(batchTriggerLogic)
++    const { setBatchSize, setTriggerType, saveTrigger } = useActions(batchTriggerLogic)
++
++    return (
++        <div className="batch-trigger-config">
++            <h3>Batch Trigger Configuration</h3>
++            <label>
++                Batch Size:
++                <input
++                    type="number"
++                    value={batchSize}
++                    onChange={(e) => setBatchSize(Number(e.target.value))}
++                />
++            </label>
++            <label>
++                Trigger Type:
++                <select
++                    value={triggerType}
++                    onChange={(e) => setTriggerType(e.target.value)}
++                >
++                    <option value="time">Time-based</option>
++                    <option value="count">Count-based</option>
++                    <option value="size">Size-based</option>
++                </select>
++            </label>
++            <button onClick={saveTrigger} disabled={isLoading}>
++                Save Trigger
++            </button>
++        </div>
++    )
++}
++
++export async function executeBatchTrigger(triggerId: string): Promise<void> {
++    const response = await fetch(`/api/triggers/${triggerId}/execute`, {
++        method: 'POST',
++    })
++    if (!response.ok) {
++        throw new Error('Failed to execute batch trigger')
++    }
++}

@@ -1,0 +1,42 @@
+diff --git a/src/workflows/triggers/batch.py b/src/workflows/triggers/batch.py
+new file mode 100644
+index 0000000..abcdef2
+--- /dev/null
++++ b/src/workflows/triggers/batch.py
+@@ -0,0 +1,35 @@
++from typing import Any
++
++from workflows.models import Trigger, TriggerExecution
++
++
++def process_batch(team_id: int, trigger_id: int, items: list[dict[str, Any]]) -> TriggerExecution:
++    """Process a batch of items for the given trigger."""
++    trigger = Trigger.objects.get(id=trigger_id, team_id=team_id)
++
++    execution = TriggerExecution.objects.create(
++        trigger=trigger,
++        team_id=team_id,
++        status="running",
++        batch_size=len(items),
++    )
++
++    processed = 0
++    for item in items:
++        result = _process_single_item(trigger, item)
++        if result:
++            processed += 1
++
++    execution.status = "completed"
++    execution.processed_count = processed
++    execution.save()
++
++    return execution
++
++
++def _process_single_item(trigger: Trigger, item: dict[str, Any]) -> bool:
++    """Process a single item in the batch."""
++    try:
++        trigger.execute(item)
++        return True
++    except Exception:
++        return False

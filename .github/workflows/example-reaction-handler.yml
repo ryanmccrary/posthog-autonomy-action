@@ -1,0 +1,32 @@
+# Example workflow for handling reactions on the bot's PR comments
+# This creates PostHog resources when users approve proposals
+# Copy this to your repo's .github/workflows/ directory
+
+name: PostHog Autonomy Reaction Handler
+
+on:
+  issue_comment:
+    types: [edited]  # Reactions trigger edit events on comments
+  schedule:
+    - cron: '*/15 * * * *'  # Check every 15 minutes as a fallback
+
+jobs:
+  handle-reactions:
+    if: >-
+      github.event_name == 'schedule'
+      || contains(github.event.comment.body, 'posthog-product-autonomy-review')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: PostHog/product-autonomy-action@v1
+        with:
+          posthog_api_key: ${{ secrets.POSTHOG_API_KEY }}
+          posthog_project_id: ${{ secrets.POSTHOG_PROJECT_ID }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        env:
+          AUTONOMY_MODE: reaction-handler

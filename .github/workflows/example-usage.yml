@@ -1,0 +1,33 @@
+# Example workflow for using the PostHog Product Autonomy Action
+# Copy this to your repo's .github/workflows/ directory
+
+name: PostHog Product Autonomy Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+jobs:
+  autonomy-review:
+    # Skip draft PRs and bot's own commits
+    if: >-
+      !github.event.pull_request.draft
+      && !contains(github.event.head_commit.message, '[skip-autonomy]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write        # Needed to push instrumentation commits
+      pull-requests: write   # Needed to post PR comments
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: PostHog/product-autonomy-action@v1
+        with:
+          posthog_api_key: ${{ secrets.POSTHOG_API_KEY }}
+          posthog_project_id: ${{ secrets.POSTHOG_PROJECT_ID }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
